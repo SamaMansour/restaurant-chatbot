@@ -1,5 +1,7 @@
 import express from 'express';
 import 'dotenv/config';
+import chatRoutes from './routes/chatRoutes';
+
 
 
 const app = express();
@@ -16,6 +18,13 @@ app.use((req, res, next) => {
     return res.sendStatus(200);
   }
   next();
+});
+
+app.use('/api/chat', chatRoutes);
+
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Restaurant Reservation Bot API is running' });
 });
 
 app.listen(PORT, () => {
