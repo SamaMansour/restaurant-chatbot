@@ -11,7 +11,7 @@ export class GreetingHandler {
       conversation.context
     );
 
-    return `Welcome to Restaurant Reservation Bot! 🍽️
+    return `Welcome to Restaurant Reservation Bot!
 
 I'm here to help you with your restaurant reservations.
 

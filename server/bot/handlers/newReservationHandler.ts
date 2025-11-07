@@ -166,7 +166,7 @@ Please confirm (yes/no):`;
           conversation.context
         );
 
-        return `✅ Reservation confirmed!
+        return `Reservation confirmed!
 
 Confirmation ID: ${reservation.id}
 Name: ${reservation.guest_name}
