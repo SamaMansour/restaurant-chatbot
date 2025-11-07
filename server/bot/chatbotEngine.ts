@@ -1,11 +1,25 @@
 import { ConversationService } from '../services/conversationService';
-import { Conversation, ConversationState, ConversationContext, Reservation } from '../types';
+import { ReservationService } from '../services/reservationService';
+import { Conversation } from '../types';
+import { GreetingHandler } from './handlers/greetingHandler';
+import { NewReservationHandler } from './handlers/newReservationHandler';
 
 export class ChatbotEngine {
   private conversationService: ConversationService;
+  private reservationService: ReservationService;
+  private greetingHandler: GreetingHandler;
+  private newReservationHandler: NewReservationHandler;
+
 
   constructor() {
     this.conversationService = new ConversationService();
+    this.reservationService = new ReservationService();
+    this.greetingHandler = new GreetingHandler(this.conversationService);
+    this.newReservationHandler = new NewReservationHandler(
+      this.conversationService,
+      this.reservationService
+    );
+   
   }
 
   async processMessage(sessionId: string, userInput: string): Promise<string> {
@@ -20,35 +34,35 @@ export class ChatbotEngine {
     return response;
   }
 
-
   private async handleState(conversation: Conversation, userInput: string): Promise<string> {
     const state = conversation.state;
-    const context = conversation.context;
 
-        return this.handleGreeting(conversation);
+    switch (state) {
+      case 'greeting':
+        return this.greetingHandler.handle(conversation);
 
-     
+      case 'new_reservation_name':
+        return this.newReservationHandler.enterName(conversation, userInput);
+
+      case 'new_reservation_phone':
+        return this.newReservationHandler.enterPhone(conversation, userInput);
+
+      case 'new_reservation_party_size':
+        return this.newReservationHandler.handleNumberOfGuests(conversation, userInput);
+
+      case 'new_reservation_date':
+        return this.newReservationHandler.handleDate(conversation, userInput);
+
+      case 'new_reservation_time':
+        return this.newReservationHandler.handleTime(conversation, userInput);
+
+      case 'new_reservation_confirm':
+        return this.newReservationHandler.handleConfirm(conversation, userInput);
+
+      
+      default:
+        return 'Something went wrong. Please restart the conversation.';
+    }
   }
 
-
-  private async handleGreeting(conversation: Conversation): Promise<string> {
-    await this.conversationService.updateConversation(
-      conversation.session_id,
-      'menu',
-      conversation.context
-    );
-
-    return `Welcome to Restaurant Reservation Bot! 
-
-
-Please choose an option:
-1. Make a new reservation
-2. Modify an existing reservation
-3. Cancel a reservation
-
-Enter the number (1, 2, or 3):`;
-  }
-
-
- 
 }
