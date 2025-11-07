@@ -10,6 +10,7 @@ export interface Reservation {
   updated_at?: string;
   conversation_id?: string;
 }
+
 export interface Conversation {
   id?: string;
   session_id: string;
@@ -21,13 +22,22 @@ export interface Conversation {
 
 export type ConversationState =
   | 'greeting'
+  | 'menu'
   | 'new_reservation_name'
   | 'new_reservation_phone'
   | 'new_reservation_party_size'
   | 'new_reservation_date'
   | 'new_reservation_time'
   | 'new_reservation_confirm'
- 
+  | 'modify_lookup'
+  | 'modify_menu'
+  | 'modify_date'
+  | 'modify_time'
+  | 'modify_party_size'
+  | 'modify_confirm'
+  | 'cancel_lookup'
+  | 'cancel_confirm'
+  | 'completed';
 
 export interface ConversationContext {
   intent?: 'new' | 'modify' | 'cancel';
@@ -38,4 +48,19 @@ export interface ConversationContext {
   reservation_time?: string;
   reservation_id?: string;
   previous_reservation?: Reservation;
+}
+
+export interface TimeSlot {
+  id?: string;
+  slot_time: string;
+  max_capacity: number;
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
 }

@@ -13,12 +13,12 @@ interface ConversationAttributes {
 interface ConversationCreationAttributes extends Optional<ConversationAttributes, 'id' | 'state' | 'context' | 'createdAt' | 'updatedAt'> {}
 
 class Conversation extends Model<ConversationAttributes, ConversationCreationAttributes> implements ConversationAttributes {
-  public id!: string;
-  public sessionId!: string;
-  public state!: string;
-  public context!: object;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare id: string;
+  declare sessionId: string;
+  declare state: string;
+  declare context: object;
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
 }
 
 Conversation.init(

@@ -17,16 +17,16 @@ interface ReservationAttributes {
 interface ReservationCreationAttributes extends Optional<ReservationAttributes, 'id' | 'status' | 'createdAt' | 'updatedAt'> {}
 
 class Reservation extends Model<ReservationAttributes, ReservationCreationAttributes> implements ReservationAttributes {
-  public id!: string;
-  public guestName!: string;
-  public guestPhone!: string;
-  public partySize!: number;
-  public reservationDate!: Date;
-  public reservationTime!: string;
-  public status!: string;
-  public conversationId?: string;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare id: string;
+  declare guestName: string;
+  declare guestPhone: string;
+  declare partySize: number;
+  declare reservationDate: Date;
+  declare reservationTime: string;
+  declare status: string;
+  declare conversationId?: string;
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
 }
 
 Reservation.init(

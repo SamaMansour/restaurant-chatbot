@@ -15,7 +15,7 @@ export class ChatbotEngine {
       conversation = await this.conversationService.createConversation(sessionId);
     }
 
-    const response = 'hello';
+    const response = 'hello'
 
     return response;
   }

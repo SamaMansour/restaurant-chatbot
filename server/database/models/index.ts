@@ -1,13 +1,14 @@
 import sequelize from '../config/database';
-
-import Conversation from './Conversation';
 import Reservation from './Reservation';
+import Conversation from './Conversation';
+import TimeSlot from './TimeSlot';
 
 const models = {
-  Conversation,
   Reservation,
+  Conversation,
+  TimeSlot,
   sequelize,
 };
 
-export { Conversation, Reservation,  sequelize };
+export { Reservation, Conversation, TimeSlot, sequelize };
 export default models;

@@ -2,7 +2,7 @@ import { Conversation as ConversationModel } from '../database/models';
 import { Conversation, ConversationState, ConversationContext } from '../types';
 
 export class ConversationService {
-     async createConversation(sessionId: string): Promise<Conversation> {
+  async createConversation(sessionId: string): Promise<Conversation> {
     const created = await ConversationModel.create({
       sessionId,
       state: 'greeting',
@@ -20,6 +20,31 @@ export class ConversationService {
     return conversation ? this.mapToConversation(conversation) : null;
   }
 
+  async updateConversation(
+    sessionId: string,
+    state: ConversationState,
+    context: ConversationContext
+  ): Promise<Conversation> {
+    await ConversationModel.update(
+      { state, context },
+      { where: { sessionId } }
+    );
+
+    const updated = await ConversationModel.findOne({
+      where: { sessionId },
+    });
+
+    if (!updated) throw new Error('Failed to update conversation');
+
+    return this.mapToConversation(updated);
+  }
+
+  async deleteConversation(sessionId: string): Promise<void> {
+    await ConversationModel.destroy({
+      where: { sessionId },
+    });
+  }
+
   private mapToConversation(model: any): Conversation {
     return {
       id: model.id,
@@ -30,5 +55,4 @@ export class ConversationService {
       updated_at: model.updatedAt?.toISOString(),
     };
   }
-  
 }
