@@ -2,6 +2,7 @@ import { ConversationService } from '../services/conversationService';
 import { ReservationService } from '../services/reservationService';
 import { Conversation } from '../types';
 import { GreetingHandler } from './handlers/greetingHandler';
+import { MenuHandler } from './handlers/menuHandler';
 import { NewReservationHandler } from './handlers/newReservationHandler';
 
 export class ChatbotEngine {
@@ -9,6 +10,8 @@ export class ChatbotEngine {
   private reservationService: ReservationService;
   private greetingHandler: GreetingHandler;
   private newReservationHandler: NewReservationHandler;
+  private menuHandler: MenuHandler;
+
 
 
   constructor() {
@@ -19,6 +22,8 @@ export class ChatbotEngine {
       this.conversationService,
       this.reservationService
     );
+    this.menuHandler = new MenuHandler(this.conversationService);
+
    
   }
 
@@ -40,6 +45,8 @@ export class ChatbotEngine {
     switch (state) {
       case 'greeting':
         return this.greetingHandler.handle(conversation);
+      case 'menu':
+        return this.menuHandler.handle(conversation, userInput);
 
       case 'new_reservation_name':
         return this.newReservationHandler.enterName(conversation, userInput);
