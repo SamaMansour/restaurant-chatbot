@@ -48,7 +48,6 @@ module.exports = {
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
     });
-
      await queryInterface.addIndex('reservations', ['reservation_date', 'reservation_time'], {
       name: 'idx_reservations_date_time',
     });
