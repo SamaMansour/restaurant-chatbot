@@ -10,16 +10,25 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "server": "tsx server/index.ts",
-    "cli": "tsx cli/chatClient.ts"
+    "cli": "tsx cli/chatClient.ts",
+    "db:migrate": "sequelize-cli db:migrate",
+    "db:migrate:undo": "sequelize-cli db:migrate:undo",
+    "db:seed": "sequelize-cli db:seed:all",
+    "db:seed:undo": "sequelize-cli db:seed:undo:all"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
     "@types/express": "^5.0.5",
     "@types/node": "^24.10.0",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "lucide-react": "^0.344.0",
+    "pg": "^8.16.3",
+    "pg-hstore": "^2.3.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "sequelize": "^6.37.7",
+    "sequelize-cli": "^6.6.3",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
