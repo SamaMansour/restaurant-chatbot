@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Op } from 'sequelize';
 import { Reservation as ReservationModel, TimeSlot } from '../database/models';
 import { Reservation } from '../types';
