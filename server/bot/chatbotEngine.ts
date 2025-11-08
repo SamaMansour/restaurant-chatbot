@@ -5,6 +5,7 @@ import { GreetingHandler } from './handlers/greetingHandler';
 import { MenuHandler } from './handlers/menuHandler';
 import { NewReservationHandler } from './handlers/newReservationHandler';
 import { CancelReservationHandler } from './handlers/cancelReservationHandler';
+import { ModifyReservationHandler } from './handlers/modifyReservationHnadler';
 
 export class ChatbotEngine {
   private conversationService: ConversationService;
@@ -12,6 +13,7 @@ export class ChatbotEngine {
   private greetingHandler: GreetingHandler;
   private menuHandler: MenuHandler;
   private newReservationHandler: NewReservationHandler;
+  private modifyReservationHandler: ModifyReservationHandler;
   private cancelReservationHandler: CancelReservationHandler;
 
   constructor() {
@@ -20,6 +22,10 @@ export class ChatbotEngine {
     this.greetingHandler = new GreetingHandler(this.conversationService);
     this.menuHandler = new MenuHandler(this.conversationService);
     this.newReservationHandler = new NewReservationHandler(
+      this.conversationService,
+      this.reservationService
+    );
+    this.modifyReservationHandler = new ModifyReservationHandler(
       this.conversationService,
       this.reservationService
     );
@@ -69,7 +75,24 @@ export class ChatbotEngine {
       case 'new_reservation_confirm':
         return this.newReservationHandler.handleConfirm(conversation, userInput);
 
-    
+      case 'modify_lookup':
+        return this.modifyReservationHandler.handleLookup(conversation, userInput);
+
+      case 'modify_menu':
+        return this.modifyReservationHandler.handleMenu(conversation, userInput);
+
+      case 'modify_date':
+        return this.modifyReservationHandler.handleDate(conversation, userInput);
+
+      case 'modify_time':
+        return this.modifyReservationHandler.handleTime(conversation, userInput);
+
+      case 'modify_party_size':
+        return this.modifyReservationHandler.handlePartySize(conversation, userInput);
+
+      case 'modify_confirm':
+        return this.modifyReservationHandler.handleConfirm(conversation, userInput);
+
       case 'cancel_lookup':
         return this.cancelReservationHandler.handleLookup(conversation, userInput);
 

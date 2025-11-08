@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ConversationService } from '../../services/conversationService';
 import { ReservationService } from '../../services/reservationService';
 import { Conversation } from '../../types';

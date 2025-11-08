@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as readline from 'readline';
 import { v4 as uuidv4 } from 'uuid';
 import 'dotenv/config';
