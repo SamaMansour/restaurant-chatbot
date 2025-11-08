@@ -4,27 +4,29 @@ import { Conversation } from '../types';
 import { GreetingHandler } from './handlers/greetingHandler';
 import { MenuHandler } from './handlers/menuHandler';
 import { NewReservationHandler } from './handlers/newReservationHandler';
+import { CancelReservationHandler } from './handlers/cancelReservationHandler';
 
 export class ChatbotEngine {
   private conversationService: ConversationService;
   private reservationService: ReservationService;
   private greetingHandler: GreetingHandler;
-  private newReservationHandler: NewReservationHandler;
   private menuHandler: MenuHandler;
-
-
+  private newReservationHandler: NewReservationHandler;
+  private cancelReservationHandler: CancelReservationHandler;
 
   constructor() {
     this.conversationService = new ConversationService();
     this.reservationService = new ReservationService();
     this.greetingHandler = new GreetingHandler(this.conversationService);
+    this.menuHandler = new MenuHandler(this.conversationService);
     this.newReservationHandler = new NewReservationHandler(
       this.conversationService,
       this.reservationService
     );
-    this.menuHandler = new MenuHandler(this.conversationService);
-
-   
+    this.cancelReservationHandler = new CancelReservationHandler(
+      this.conversationService,
+      this.reservationService
+    );
   }
 
   async processMessage(sessionId: string, userInput: string): Promise<string> {
@@ -45,6 +47,7 @@ export class ChatbotEngine {
     switch (state) {
       case 'greeting':
         return this.greetingHandler.handle(conversation);
+
       case 'menu':
         return this.menuHandler.handle(conversation, userInput);
 
@@ -66,10 +69,28 @@ export class ChatbotEngine {
       case 'new_reservation_confirm':
         return this.newReservationHandler.handleConfirm(conversation, userInput);
 
-      
+    
+      case 'cancel_lookup':
+        return this.cancelReservationHandler.handleLookup(conversation, userInput);
+
+      case 'cancel_confirm':
+        return this.cancelReservationHandler.handleConfirm(conversation, userInput);
+
+      case 'completed':
+        return this.handleCompleted(conversation);
+
       default:
         return 'Something went wrong. Please restart the conversation.';
     }
   }
 
+  private async handleCompleted(conversation: Conversation): Promise<string> {
+    await this.conversationService.updateConversation(
+      conversation.session_id,
+      'greeting',
+      {}
+    );
+
+    return this.greetingHandler.handle(conversation);
+  }
 }

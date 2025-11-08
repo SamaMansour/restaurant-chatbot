@@ -81,7 +81,7 @@ Please enter the number of the reservation you'd like to cancel:`;
           conversation.context
         );
 
-        return `Reservation cancelled successfully.
+        return `✅ Reservation cancelled successfully.
 
 We're sorry to see you go. We hope to serve you another time!
 
