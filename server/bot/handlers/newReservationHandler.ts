@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-useless-escape */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ConversationService } from "../../services/conversationService";
 import { ReservationService } from "../../services/reservationService";
 import { Conversation } from "../../types";
@@ -9,146 +8,95 @@ export class NewReservationHandler {
   constructor(
     private conversationService: ConversationService,
     private reservationService: ReservationService
-  ) { }
+  ) {}
 
+  async enterName(conversation: Conversation, input: string): Promise<string> {
+    const name = input.trim();
+    if (!name) return "Please enter a valid name.";
 
-  public async enterName(conversation: Conversation, userInput: string): Promise<string> {
+    await this.conversationService.updateConversation(conversation.session_id, "new_reservation_phone", {
+      ...conversation.context,
+      guest_name: name,
+    });
 
-    const name = userInput.trim();
-
-    if (!name) {
-      return 'Please enter a valid name'
-    }
-
-    const context = { ...conversation.context, guest_name: name };
-    await this.conversationService.updateConversation(
-      conversation.session_id,
-      'new_reservation_phone',
-      context
-    );
-
-    return `Now, Plaese enter your phone number`;
-
+    return "Got it. Please enter your phone number:";
   }
 
-  async enterPhone(conversation: Conversation, userInput: string): Promise<string> {
-    const phone = userInput.trim();
-    const validPhone = /^[\d\s\-\+\(\)]+$/;
+  async enterPhone(conversation: Conversation, input: string): Promise<string> {
+    const phone = input.trim();
+    const isValid = /^[\d\s\-\+\(\)]+$/.test(phone);
 
-    if (!phone || phone.length < 10 || !validPhone.test(phone)) {
-      return 'Please enter a valid phone number (at least 10 digits):';
-    }
+    if (!isValid || phone.length < 10)
+      return "Please enter a valid phone number (at least 10 digits).";
 
-    const context = { ...conversation.context, guest_phone: phone };
-    await this.conversationService.updateConversation(
-      conversation.session_id,
-      'new_reservation_party_size',
-      context
-    );
+    await this.conversationService.updateConversation(conversation.session_id, "new_reservation_party_size", {
+      ...conversation.context,
+      guest_phone: phone,
+    });
 
-    return `Please enter how many guests do you have (1-8)?`
-
-
+    return "How many guests (1–8)?";
   }
 
+  async enterPartySize(conversation: Conversation, input: string): Promise<string> {
+    const count = parseInt(input.trim(), 10);
+    if (isNaN(count) || count < 1 || count > 8)
+      return "Please enter a valid number between 1 and 8.";
 
-  async handleNumberOfGuests(conversation: Conversation, userInput: string): Promise<string> {
-    const numberOfGuests = parseInt(userInput.trim());
+    await this.conversationService.updateConversation(conversation.session_id, "new_reservation_date", {
+      ...conversation.context,
+      party_size: count,
+    });
 
-    if (isNaN(numberOfGuests) || numberOfGuests < 1 || numberOfGuests > 5) {
-      return 'Please enter a valid number of guests (1-20):';
-    }
-
-    const context = { ...conversation.context, party_size: numberOfGuests };
-    await this.conversationService.updateConversation(
-      conversation.session_id,
-      'new_reservation_date',
-      context
-    );
-
-    return `
-Please enter your preferred date (YYYY-MM-DD format, e.g., 2025-11-15):`;
+    return "Please enter the date (YYYY-MM-DD):";
   }
 
+  async enterDate(conversation: Conversation, input: string): Promise<string> {
+    const date = input.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return "Invalid date format. Example: 2025-11-15";
 
-  async handleDate(conversation: Conversation, userInput: string): Promise<string> {
-    const dateInput = userInput.trim();
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-
-    if (!dateRegex.test(dateInput)) {
-      return 'Please enter a valid date in YYYY-MM-DD format (e.g., 2025-11-15):';
-    }
-
-    const inputDate = new Date(dateInput);
+    const parsed = new Date(date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (isNaN(inputDate.getTime()) || inputDate < today) {
-      return 'Please enter a valid future date in YYYY-MM-DD format:';
-    }
+    if (isNaN(parsed.getTime()) || parsed < today)
+      return "Please enter a future date.";
 
-    try {
-      const availableSlots = await this.reservationService.getAvailableTimeSlots(dateInput);
+    const slots = await this.reservationService.getAvailableTimeSlots(date);
+    if (!slots.length) return `No time slots available for ${date}. Choose another date.`;
 
-      if (availableSlots.length === 0) {
-        return `Sorry, no time slots are available for ${dateInput}. Please choose another date:`;
-      }
+    await this.conversationService.updateConversation(conversation.session_id, "new_reservation_time", {
+      ...conversation.context,
+      reservation_date: date,
+    });
 
-      const context = { ...conversation.context, reservation_date: dateInput };
-      await this.conversationService.updateConversation(
-        conversation.session_id,
-        'new_reservation_time',
-        context
-      );
-
-      const slotsList = availableSlots.map((slot, index) => `${index + 1}. ${slot}`).join('\n');
-
-      return `Available time slots for ${dateInput}:
-
-${slotsList}
-
-Please enter the number of your preferred time slot:`;
-    } catch (error) {
-      return `Error checking availability. Please try again or choose another date:`;
-    }
+    const list = slots.map((s, i) => `${i + 1}. ${s}`).join("\n");
+    return `Available time slots for ${date}:\n\n${list}\n\nEnter the number of your preferred slot:`;
   }
 
-  async handleTime(conversation: Conversation, userInput: string): Promise<string> {
-    const choice = parseInt(userInput.trim());
+  async enterTime(conversation: Conversation, input: string): Promise<string> {
+    const choice = parseInt(input.trim(), 10);
+    const slots = await this.reservationService.getAvailableTimeSlots(conversation.context.reservation_date!);
 
-    try {
-      const availableSlots = await this.reservationService.getAvailableTimeSlots(
-        conversation.context.reservation_date!
-      );
+    if (isNaN(choice) || choice < 1 || choice > slots.length)
+      return `Please enter a valid number (1–${slots.length}).`;
 
-      if (isNaN(choice) || choice < 1 || choice > availableSlots.length) {
-        return `Please enter a valid number (1-${availableSlots.length}):`;
-      }
+    const selected = slots[choice - 1];
+    const ctx = { ...conversation.context, reservation_time: selected };
 
-      const selectedTime = availableSlots[choice - 1];
-      const context = { ...conversation.context, reservation_time: selectedTime };
-      await this.conversationService.updateConversation(
-        conversation.session_id,
-        'new_reservation_confirm',
-        context
-      );
+    await this.conversationService.updateConversation(conversation.session_id, "new_reservation_confirm", ctx);
 
-      return `Perfect! Here's your reservation summary:
+    return `Here’s your reservation summary:
 
-Name: ${context.guest_name}
-Phone: ${context.guest_phone}
-Party Size: ${context.party_size}
-Date: ${context.reservation_date}
-Time: ${context.reservation_time}
+    Name: ${ctx.guest_name}
+    Phone: ${ctx.guest_phone}
+    Guests: ${ctx.party_size}
+    Date: ${ctx.reservation_date}
+    Time: ${ctx.reservation_time}
 
-Please confirm (yes/no):`;
-    } catch (error) {
-      return 'Error processing your selection. Please try again:';
-    }
+    Confirm? (yes/no)`;
   }
 
-
-    async handleConfirm(conversation: Conversation, userInput: string): Promise<string> {
+  async confirm(conversation: Conversation, userInput: string): Promise<string> {
     const response = userInput.trim().toLowerCase();
 
     if (response === 'yes' || response === 'y') {
@@ -210,9 +158,4 @@ Enter the number (1, 2, or 3):`;
       return 'Please answer "yes" or "no":';
     }
   }
-
-
-
-
-
 }
