@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Conversation as ConversationModel } from '../database/models';
 import { Conversation, ConversationState, ConversationContext } from '../types';
 

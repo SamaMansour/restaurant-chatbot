@@ -10,6 +10,7 @@ import { ModifyReservationHandler } from "./handlers/modifyReservationHnadler";
 export class ChatbotEngine {
   private conversationService = new ConversationService();
   private reservationService = new ReservationService();
+
   private greeting = new GreetingHandler(this.conversationService);
   private menu = new MenuHandler(this.conversationService);
   private newReservation = new NewReservationHandler(this.conversationService, this.reservationService);
@@ -19,34 +20,67 @@ export class ChatbotEngine {
   async processMessage(sessionId: string, userInput: string): Promise<string> {
     let convo = await this.conversationService.getConversation(sessionId);
     if (!convo) convo = await this.conversationService.createConversation(sessionId);
-
     return this.route(convo, userInput);
   }
 
   private async route(convo: Conversation, input: string): Promise<string> {
-    const state = convo.state;
+    const { state } = convo;
 
-    const map: Record<string, () => Promise<string>> = {
-      greeting: () => this.greeting.handle(convo),
-      menu: () => this.menu.handle(convo, input),
-      new_reservation_name: () => this.newReservation.enterName(convo, input),
-      new_reservation_phone: () => this.newReservation.enterPhone(convo, input),
-      new_reservation_party_size: () => this.newReservation.enterPartySize(convo, input),
-      new_reservation_date: () => this.newReservation.enterDate(convo, input),
-      new_reservation_time: () => this.newReservation.enterTime(convo, input),
-      new_reservation_confirm: () => this.newReservation.confirm(convo, input),
-      modify_lookup: () => this.modify.handleLookup(convo, input),
-      modify_menu: () => this.modify.handleMenu(convo, input),
-      modify_date: () => this.modify.handleDate(convo, input),
-      modify_time: () => this.modify.handleTime(convo, input),
-      modify_party_size: () => this.modify.handlePartySize(convo, input),
-      modify_confirm: () => this.modify.handleConfirm(convo, input),
-      cancel_lookup: () => this.cancel.handleLookup(convo, input),
-      cancel_confirm: () => this.cancel.handleConfirm(convo, input),
-      completed: () => this.reset(convo),
-    };
+    switch (state) {
+      case "greeting":
+        return this.greeting.handle(convo);
 
-    return map[state]?.() || "Something went wrong. Please restart.";
+      case "menu":
+        return this.menu.handle(convo, input);
+
+      case "new_reservation_name":
+        return this.newReservation.enterName(convo, input);
+
+      case "new_reservation_phone":
+        return this.newReservation.enterPhone(convo, input);
+
+      case "new_reservation_party_size":
+        return this.newReservation.enterPartySize(convo, input);
+
+      case "new_reservation_date":
+        return this.newReservation.enterDate(convo, input);
+
+      case "new_reservation_time":
+        return this.newReservation.enterTime(convo, input);
+
+      case "new_reservation_confirm":
+        return this.newReservation.confirm(convo, input);
+
+      case "modify_lookup":
+        return this.modify.handleLookup(convo, input);
+
+      case "modify_menu":
+        return this.modify.handleMenu(convo, input);
+
+      case "modify_date":
+        return this.modify.handleDate(convo, input);
+
+      case "modify_time":
+        return this.modify.handleTime(convo, input);
+
+      case "modify_party_size":
+        return this.modify.handlePartySize(convo, input);
+
+      case "modify_confirm":
+        return this.modify.handleConfirm(convo, input);
+
+      case "cancel_lookup":
+        return this.cancel.handleLookup(convo, input);
+
+      case "cancel_confirm":
+        return this.cancel.handleConfirm(convo, input);
+
+      case "completed":
+        return this.reset(convo);
+
+      default:
+        return "Something went wrong. Please restart.";
+    }
   }
 
   private async reset(convo: Conversation): Promise<string> {
