@@ -1,6 +1,7 @@
 import express from 'express';
 import 'dotenv/config';
 import chatRoutes from './routes/chatRoutes';
+import reservationRoutes from './routes/reservationRoutes';
 
 
 
@@ -21,6 +22,8 @@ app.use((req, res, next) => {
 });
 
 app.use('/api/chat', chatRoutes);
+app.use('/api/reservations', reservationRoutes);
+
 
 
 app.get('/api/health', (req, res) => {
