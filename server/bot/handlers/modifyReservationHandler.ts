@@ -1,21 +1,20 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { ConversationService } from '../../services/conversationService';
-import { ReservationService } from '../../services/reservationService';
+import { ConversationRepository } from '../../repositories/ConversationRepository';
+import { ReservationRepository } from '../../repositories/ReservationRepository';
+import { ReservationAdapter } from '../../interfaces/reservationAdapter';
 import { Conversation, Reservation } from '../../types';
 
 export class ModifyReservationHandler {
   constructor(
-    private conversationService: ConversationService,
-    private reservationService: ReservationService
+    private conversationRepository: ConversationRepository,
+    private reservationRepository: ReservationRepository
   ) {}
 
   async handleLookup(conversation: Conversation, userInput: string): Promise<string> {
     const phone = userInput.trim();
 
     try {
-      const reservations = await this.reservationService.getReservationByPhone(phone);
+      const domainReservations = await this.reservationRepository.findByPhone(phone);
+      const reservations = ReservationAdapter.toTypeBatch(domainReservations);
 
       if (reservations.length === 0) {
         return `No confirmed reservations found for ${phone}.
@@ -29,7 +28,7 @@ Please check your phone number and try again, or type 'menu' to return to main m
         context.reservation_id = reservations[0].id;
         context.previous_reservation = reservations[0];
 
-        await this.conversationService.updateConversation(
+        await this.conversationRepository.updateState(
           conversation.session_id,
           'modify_menu',
           context
@@ -56,7 +55,7 @@ Enter the number (1 or 2):`;
 
         context.previous_reservation = reservations[0];
 
-        await this.conversationService.updateConversation(
+        await this.conversationRepository.updateState(
           conversation.session_id,
           'modify_menu',
           context
@@ -77,7 +76,7 @@ Please enter the number of the reservation you'd like to modify:`;
     const choice = userInput.trim();
 
     if (choice === '1') {
-      await this.conversationService.updateConversation(
+      await this.conversationRepository.updateState(
         conversation.session_id,
         'modify_date',
         conversation.context
@@ -85,7 +84,7 @@ Please enter the number of the reservation you'd like to modify:`;
 
       return `Please enter your new preferred date (YYYY-MM-DD format):`;
     } else if (choice === '2') {
-      await this.conversationService.updateConversation(
+      await this.conversationRepository.updateState(
         conversation.session_id,
         'modify_party_size',
         conversation.context
@@ -114,20 +113,21 @@ Please enter the number of the reservation you'd like to modify:`;
     }
 
     try {
-      const availableSlots = await this.reservationService.getAvailableTimeSlots(dateInput);
+      const availableSlots = await this.reservationRepository.getAvailableTimeSlots();
+      const slotTimes = availableSlots.map(slot => slot.time);
 
-      if (availableSlots.length === 0) {
+      if (slotTimes.length === 0) {
         return `Sorry, no time slots are available for ${dateInput}. Please choose another date:`;
       }
 
       const context = { ...conversation.context, reservation_date: dateInput };
-      await this.conversationService.updateConversation(
+      await this.conversationRepository.updateState(
         conversation.session_id,
         'modify_time',
         context
       );
 
-      const slotsList = availableSlots.map((slot, index) => `${index + 1}. ${slot}`).join('\n');
+      const slotsList = slotTimes.map((slot, index) => `${index + 1}. ${slot}`).join('\n');
 
       return `Available time slots for ${dateInput}:
 
@@ -143,17 +143,16 @@ Please enter the number of your preferred time slot:`;
     const choice = parseInt(userInput.trim());
 
     try {
-      const availableSlots = await this.reservationService.getAvailableTimeSlots(
-        conversation.context.reservation_date!
-      );
+      const availableSlots = await this.reservationRepository.getAvailableTimeSlots();
+      const slotTimes = availableSlots.map(slot => slot.time);
 
-      if (isNaN(choice) || choice < 1 || choice > availableSlots.length) {
-        return `Please enter a valid number (1-${availableSlots.length}):`;
+      if (isNaN(choice) || choice < 1 || choice > slotTimes.length) {
+        return `Please enter a valid number (1-${slotTimes.length}):`;
       }
 
-      const selectedTime = availableSlots[choice - 1];
+      const selectedTime = slotTimes[choice - 1];
       const context = { ...conversation.context, reservation_time: selectedTime };
-      await this.conversationService.updateConversation(
+      await this.conversationRepository.updateState(
         conversation.session_id,
         'modify_confirm',
         context
@@ -179,7 +178,7 @@ Please confirm the changes (yes/no):`;
     }
 
     const context = { ...conversation.context, party_size: partySize };
-    await this.conversationService.updateConversation(
+    await this.conversationRepository.updateState(
       conversation.session_id,
       'modify_confirm',
       context
@@ -202,21 +201,20 @@ Please confirm the changes (yes/no):`;
       try {
         const updates: Partial<Reservation> = {};
 
-        if (conversation.context.reservation_date) {
-          updates.reservation_date = conversation.context.reservation_date;
-          updates.reservation_time = conversation.context.reservation_time;
-        }
+        const newPartySize = conversation.context.party_size;
+        const newDate = conversation.context.reservation_date ? new Date(conversation.context.reservation_date) : undefined;
+        const newTime = conversation.context.reservation_time;
 
-        if (conversation.context.party_size) {
-          updates.party_size = conversation.context.party_size;
-        }
-
-        const updated = await this.reservationService.updateReservation(
+        const domainUpdated = await this.reservationRepository.updateReservation(
           conversation.context.previous_reservation?.id!,
-          updates
+          newPartySize,
+          newDate,
+          newTime
         );
 
-        await this.conversationService.updateConversation(
+        const updated = ReservationAdapter.toType(domainUpdated);
+
+        await this.conversationRepository.updateState(
           conversation.session_id,
           'completed',
           conversation.context
@@ -236,7 +234,7 @@ Type 'restart' to make another reservation.`;
 Type 'menu' to return to main menu.`;
       }
     } else if (response === 'no' || response === 'n') {
-      await this.conversationService.updateConversation(
+      await this.conversationRepository.updateState(
         conversation.session_id,
         'menu',
         {}

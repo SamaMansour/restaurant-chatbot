@@ -10,5 +10,4 @@ const models = {
   sequelize,
 };
 
-export { Reservation, Conversation, TimeSlot, sequelize };
 export default models;

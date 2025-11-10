@@ -1,17 +1,17 @@
-import { ConversationService } from '../../services/conversationService';
+import { ConversationRepository } from '../../repositories/ConversationRepository';
 import { Conversation } from '../../types';
 
 export class GreetingHandler {
-  constructor(private conversationService: ConversationService) {}
+  constructor(private conversationRepository: ConversationRepository) {}
 
   async handle(conversation: Conversation): Promise<string> {
-    await this.conversationService.updateConversation(
+    await this.conversationRepository.updateState(
       conversation.session_id,
       'menu',
       conversation.context
     );
 
-    return `Welcome to Restaurant Reservation Bot!
+    return `Welcome to Restaurant Reservation Bot! 🍽️
 
 I'm here to help you with your restaurant reservations.
 

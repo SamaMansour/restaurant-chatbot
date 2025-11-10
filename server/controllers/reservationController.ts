@@ -1,16 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import express from 'express';
-import { ReservationService } from '../services/reservationService';
+import { ReservationRepository } from '../repositories/ReservationRepository';
+import { ReservationAdapter } from '../interfaces/reservationAdapter';
 
 const router = express.Router();
-const reservationService = new ReservationService();
+const reservationRepository = new ReservationRepository();
 
 router.post('/', async (req, res) => {
   try {
-    const reservation = await reservationService.createReservation(req.body);
+    const { guestName, phoneNumber, partySize, reservationDate, reservationTime } = req.body;
+
+    const reservation = await reservationRepository.create(
+      guestName,
+      phoneNumber,
+      partySize,
+      new Date(reservationDate),
+      reservationTime
+    );
+
     res.json({
       success: true,
-      data: reservation,
+      data: ReservationAdapter.toDTO(reservation),
     });
   } catch (error: any) {
     res.status(400).json({
@@ -22,10 +32,10 @@ router.post('/', async (req, res) => {
 
 router.get('/phone/:phone', async (req, res) => {
   try {
-    const reservations = await reservationService.getReservationByPhone(req.params.phone);
+    const reservations = await reservationRepository.findByPhone(req.params.phone);
     res.json({
       success: true,
-      data: reservations,
+      data: reservations.map(r => ReservationAdapter.toDTO(r)),
     });
   } catch (error: any) {
     res.status(500).json({
@@ -37,7 +47,7 @@ router.get('/phone/:phone', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const reservation = await reservationService.getReservationById(req.params.id);
+    const reservation = await reservationRepository.findById(req.params.id);
     if (!reservation) {
       return res.status(404).json({
         success: false,
@@ -46,7 +56,7 @@ router.get('/:id', async (req, res) => {
     }
     res.json({
       success: true,
-      data: reservation,
+      data: ReservationAdapter.toDTO(reservation),
     });
   } catch (error: any) {
     res.status(500).json({
@@ -58,10 +68,18 @@ router.get('/:id', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const reservation = await reservationService.updateReservation(req.params.id, req.body);
+    const { partySize, reservationDate, reservationTime } = req.body;
+
+    const reservation = await reservationRepository.updateReservation(
+      req.params.id,
+      partySize,
+      reservationDate ? new Date(reservationDate) : undefined,
+      reservationTime
+    );
+
     res.json({
       success: true,
-      data: reservation,
+      data: ReservationAdapter.toDTO(reservation),
     });
   } catch (error: any) {
     res.status(400).json({
@@ -73,10 +91,10 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const reservation = await reservationService.cancelReservation(req.params.id);
+    const reservation = await reservationRepository.cancelReservation(req.params.id);
     res.json({
       success: true,
-      data: reservation,
+      data: ReservationAdapter.toDTO(reservation),
     });
   } catch (error: any) {
     res.status(400).json({
@@ -88,10 +106,13 @@ router.delete('/:id', async (req, res) => {
 
 router.get('/slots/:date', async (req, res) => {
   try {
-    const slots = await reservationService.getAvailableTimeSlots(req.params.date);
+    const slots = await reservationRepository.getAvailableTimeSlots();
     res.json({
       success: true,
-      data: slots,
+      data: slots.map(s => ({
+        time: s.time,
+        available: s.isAvailable()
+      })),
     });
   } catch (error: any) {
     res.status(500).json({
