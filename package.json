@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "server": "tsx server/index.ts",
     "cli": "tsx cli/chatClient.ts",
+    "db:create": "node scripts/createDatabase.cjs",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
     "db:seed": "sequelize-cli db:seed:all",
