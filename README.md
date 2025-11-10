@@ -4,24 +4,20 @@ A chatbot for managing restaurant reservations.
 
 ## Overview
 
-This project provides a structured chatbot that allows users to manage restaurant reservations through natural conversation.
-It follows **Domain-Driven Design (DDD)** and **Clean Architecture** principles to maintain clear separation between domains, use cases, infrastructure, and interfaces.
-
-### Users can:
+Allows users to:
 
 * Create, modify, and cancel reservations
 * Check available time slots
-* Maintain multiple sessions concurrently
+* Maintain multiple sessions
 
-Built with **TypeScript**, **Node.js**, **Express**, and **PostgreSQL**.
+Built with **TypeScript**, **Node.js**, **Express**, and **PostgreSQL** following clean architecture principles.
 
 ## Tech Stack
 
-* **Backend:** Node.js, TypeScript, Express
-* **Database:** PostgreSQL with Sequelize ORM
-* **Architecture:** Domain-Driven Design (DDD), Clean Architecture
-* **Patterns Used:** State Machine, Strategy, Repository, and Service Layer
-* **Optional Frontend:** React + Vite
+* Node.js, TypeScript, Express
+* PostgreSQL, Sequelize ORM
+* Optional React + Vite frontend
+* Patterns: State Machine, Strategy, Service Layer
 
 ## Quick Start
 
@@ -34,7 +30,7 @@ npm run server
 npm run cli
 ```
 
-### .env Example
+**.env**
 
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/restaurant_bot"
@@ -42,9 +38,8 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/restaurant_bot"
 
 ## Features
 
-* Guided conversational flow using a state machine
-* Real-time time-slot availability
-* Reservation creation, modification, and cancellation
-* Robust input validation and error handling
-* Supports concurrent user sessions
-* Organized domain layers following DDD:
+* Guided conversation flow
+* Real-time slot availability
+* Reservation modification and cancellation
+* Input validation and error handling
+* Supports concurrent sessions
