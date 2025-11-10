@@ -1,3 +1,4 @@
+// chatbotEngine.ts
 import { ConversationRepository } from '../repositories/ConversationRepository';
 import { ReservationRepository } from '../repositories/ReservationRepository';
 import { TimeSlotRepository } from '../repositories/TimeSlotRepository';
@@ -13,122 +14,65 @@ import { UpdateReservationUseCase } from '../usecases/UpdateReservationUseCase';
 import { CancelReservationUseCase } from '../usecases/CancelReservationUseCase';
 
 export class ChatbotEngine {
-  private conversationRepository: ConversationRepository;
+  private conversationRepo = new ConversationRepository();
   private greetingHandler: GreetingHandler;
   private menuHandler: MenuHandler;
   private newReservationHandler: NewReservationHandler;
-  private modifyReservationHandler: ModifyReservationHandler;
-  private cancelReservationHandler: CancelReservationHandler;
+  private modifyHandler: ModifyReservationHandler;
+  private cancelHandler: CancelReservationHandler;
 
   constructor() {
-    this.conversationRepository = new ConversationRepository();
-    const reservationRepository = new ReservationRepository();
-    const timeSlotRepository = new TimeSlotRepository();
+    const reservationRepo = new ReservationRepository();
+    const timeSlotRepo = new TimeSlotRepository();
 
-    const createReservationUseCase = new CreateReservationUseCase(reservationRepository, timeSlotRepository);
-    const updateReservationUseCase = new UpdateReservationUseCase(reservationRepository, timeSlotRepository);
-    const cancelReservationUseCase = new CancelReservationUseCase(reservationRepository, timeSlotRepository);
+    const createReservation = new CreateReservationUseCase(reservationRepo, timeSlotRepo);
+    const updateReservation = new UpdateReservationUseCase(reservationRepo, timeSlotRepo);
+    const cancelReservation = new CancelReservationUseCase(reservationRepo, timeSlotRepo);
 
-    this.greetingHandler = new GreetingHandler(this.conversationRepository);
-    this.menuHandler = new MenuHandler(this.conversationRepository);
-    this.newReservationHandler = new NewReservationHandler(
-      this.conversationRepository,
-      timeSlotRepository,
-      createReservationUseCase
-    );
-    this.modifyReservationHandler = new ModifyReservationHandler(
-      this.conversationRepository,
-      reservationRepository,
-      timeSlotRepository,
-      updateReservationUseCase
-    );
-    this.cancelReservationHandler = new CancelReservationHandler(
-      this.conversationRepository,
-      reservationRepository,
-      cancelReservationUseCase
-    );
+    this.greetingHandler = new GreetingHandler(this.conversationRepo);
+    this.menuHandler = new MenuHandler(this.conversationRepo);
+    this.newReservationHandler = new NewReservationHandler(this.conversationRepo, timeSlotRepo, createReservation);
+    this.modifyHandler = new ModifyReservationHandler(this.conversationRepo, reservationRepo, timeSlotRepo, updateReservation);
+    this.cancelHandler = new CancelReservationHandler(this.conversationRepo, reservationRepo, cancelReservation);
   }
 
   async processMessage(sessionId: string, userInput: string): Promise<string> {
-    let domainConversation = await this.conversationRepository.findBySessionId(sessionId);
+    let conversation = await this.conversationRepo.findBySessionId(sessionId);
+    if (!conversation) conversation = await this.conversationRepo.create(sessionId);
 
-    if (!domainConversation) {
-      domainConversation = await this.conversationRepository.create(sessionId);
-    }
-
-    const conversation = ConversationAdapter.toType(domainConversation);
-    const response = await this.handleState(conversation, userInput);
-
-    return response;
+    const conv = ConversationAdapter.toType(conversation);
+    return this.routeState(conv, userInput);
   }
 
-  private async handleState(conversation: Conversation, userInput: string): Promise<string> {
-    const state = conversation.state;
+  private async routeState(conv: Conversation, input: string): Promise<string> {
+    switch (conv.state) {
+      case 'greeting': return this.greetingHandler.handle(conv);
+      case 'menu': return this.menuHandler.handle(conv, input);
 
-    switch (state) {
-      case 'greeting':
-        return this.greetingHandler.handle(conversation);
+      case 'new_reservation_name': return this.newReservationHandler.handleName(conv, input);
+      case 'new_reservation_phone': return this.newReservationHandler.handlePhone(conv, input);
+      case 'new_reservation_party_size': return this.newReservationHandler.handlePartySize(conv, input);
+      case 'new_reservation_date': return this.newReservationHandler.handleDate(conv, input);
+      case 'new_reservation_time': return this.newReservationHandler.handleTime(conv, input);
+      case 'new_reservation_confirm': return this.newReservationHandler.handleConfirm(conv, input);
 
-      case 'menu':
-        return this.menuHandler.handle(conversation, userInput);
+      case 'modify_lookup': return this.modifyHandler.handleLookup(conv, input);
+      case 'modify_menu': return this.modifyHandler.handleMenu(conv, input);
+      case 'modify_date': return this.modifyHandler.handleDate(conv, input);
+      case 'modify_time': return this.modifyHandler.handleTime(conv, input);
+      case 'modify_party_size': return this.modifyHandler.handlePartySize(conv, input);
+      case 'modify_confirm': return this.modifyHandler.handleConfirm(conv, input);
 
-      case 'new_reservation_name':
-        return this.newReservationHandler.handleName(conversation, userInput);
+      case 'cancel_lookup': return this.cancelHandler.handleLookup(conv, input);
+      case 'cancel_confirm': return this.cancelHandler.handleConfirm(conv, input);
 
-      case 'new_reservation_phone':
-        return this.newReservationHandler.handlePhone(conversation, userInput);
-
-      case 'new_reservation_party_size':
-        return this.newReservationHandler.handlePartySize(conversation, userInput);
-
-      case 'new_reservation_date':
-        return this.newReservationHandler.handleDate(conversation, userInput);
-
-      case 'new_reservation_time':
-        return this.newReservationHandler.handleTime(conversation, userInput);
-
-      case 'new_reservation_confirm':
-        return this.newReservationHandler.handleConfirm(conversation, userInput);
-
-      case 'modify_lookup':
-        return this.modifyReservationHandler.handleLookup(conversation, userInput);
-
-      case 'modify_menu':
-        return this.modifyReservationHandler.handleMenu(conversation, userInput);
-
-      case 'modify_date':
-        return this.modifyReservationHandler.handleDate(conversation, userInput);
-
-      case 'modify_time':
-        return this.modifyReservationHandler.handleTime(conversation, userInput);
-
-      case 'modify_party_size':
-        return this.modifyReservationHandler.handlePartySize(conversation, userInput);
-
-      case 'modify_confirm':
-        return this.modifyReservationHandler.handleConfirm(conversation, userInput);
-
-      case 'cancel_lookup':
-        return this.cancelReservationHandler.handleLookup(conversation, userInput);
-
-      case 'cancel_confirm':
-        return this.cancelReservationHandler.handleConfirm(conversation, userInput);
-
-      case 'completed':
-        return this.handleCompleted(conversation);
-
-      default:
-        return 'Something went wrong. Please restart the conversation.';
+      case 'completed': return this.resetConversation(conv);
+      default: return 'An unexpected error occurred. Please restart the chat.';
     }
   }
 
-  private async handleCompleted(conversation: Conversation): Promise<string> {
-    await this.conversationRepository.updateState(
-      conversation.session_id,
-      'greeting',
-      {}
-    );
-
-    return this.greetingHandler.handle(conversation);
+  private async resetConversation(conv: Conversation): Promise<string> {
+    await this.conversationRepo.updateState(conv.session_id, 'greeting', {});
+    return this.greetingHandler.handle(conv);
   }
 }

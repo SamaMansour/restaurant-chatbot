@@ -21,58 +21,40 @@ export class ModifyReservationHandler {
       const reservations = ReservationAdapter.toTypeBatch(domainReservations);
 
       if (reservations.length === 0) {
-        return `No confirmed reservations found for ${phone}.
-
-Please check your phone number and try again, or type 'menu' to return to main menu:`;
+        return `No reservations found for ${phone}.
+Please check your number and try again, or type 'menu' to return to the main menu:`;
       }
 
       const context = { ...conversation.context, guest_phone: phone };
 
       if (reservations.length === 1) {
-        context.reservation_id = reservations[0].id;
-        context.previous_reservation = reservations[0];
+        const res = reservations[0];
+        context.reservation_id = res.id;
+        context.previous_reservation = res;
 
-        await this.conversationRepository.updateState(
-          conversation.session_id,
-          'modify_menu',
-          context
-        );
+        await this.conversationRepository.updateState(conversation.session_id, 'modify_menu', context);
 
         return `Found your reservation:
-
-Date: ${reservations[0].reservation_date}
-Time: ${reservations[0].reservation_time}
-Party Size: ${reservations[0].party_size}
+Date: ${res.reservation_date}
+Time: ${res.reservation_time}
+Party Size: ${res.party_size}
 
 What would you like to modify?
 1. Date and Time
 2. Party Size
-
-Enter the number (1 or 2):`;
-      } else {
-        const resList = reservations
-          .map(
-            (res, index) =>
-              `${index + 1}. ${res.reservation_date} at ${res.reservation_time} (Party of ${res.party_size})`
-          )
-          .join('\n');
-
-        context.previous_reservation = reservations[0];
-
-        await this.conversationRepository.updateState(
-          conversation.session_id,
-          'modify_menu',
-          context
-        );
-
-        return `Found multiple reservations:
-
-${resList}
-
-Please enter the number of the reservation you'd like to modify:`;
+Enter 1 or 2:`;
       }
-    } catch (error) {
-      return `Error looking up reservation. Please try again:`;
+
+      const list = reservations
+        .map((r, i) => `${i + 1}. ${r.reservation_date} at ${r.reservation_time} (Party of ${r.party_size})`)
+        .join('\n');
+
+      context.previous_reservation = reservations[0];
+      await this.conversationRepository.updateState(conversation.session_id, 'modify_menu', context);
+
+      return `Found multiple reservations:\n\n${list}\n\nEnter the number of the reservation you'd like to modify:`;
+    } catch {
+      return 'Error looking up your reservation. Please try again:';
     }
   }
 
@@ -80,75 +62,54 @@ Please enter the number of the reservation you'd like to modify:`;
     const choice = userInput.trim();
 
     if (choice === '1') {
-      await this.conversationRepository.updateState(
-        conversation.session_id,
-        'modify_date',
-        conversation.context
-      );
-
-      return `Please enter your new preferred date (YYYY-MM-DD format):`;
-    } else if (choice === '2') {
-      await this.conversationRepository.updateState(
-        conversation.session_id,
-        'modify_party_size',
-        conversation.context
-      );
-
-      return `Please enter the new party size (1-20):`;
-    } else {
-      return `Invalid choice. Please enter 1 or 2:`;
+      await this.conversationRepository.updateState(conversation.session_id, 'modify_date', conversation.context);
+      return 'Please enter your new preferred date (YYYY-MM-DD):';
     }
+
+    if (choice === '2') {
+      await this.conversationRepository.updateState(conversation.session_id, 'modify_party_size', conversation.context);
+      return 'Please enter the new party size (1-20):';
+    }
+
+    return 'Invalid choice. Please enter 1 or 2:';
   }
 
   async handleDate(conversation: Conversation, userInput: string): Promise<string> {
     const dateInput = userInput.trim();
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-
-    if (!dateRegex.test(dateInput)) {
-      return 'Please enter a valid date in YYYY-MM-DD format (e.g., 2025-11-15):';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+      return 'Please enter a valid date in YYYY-MM-DD format:';
     }
 
-    const inputDate = new Date(dateInput);
+    const date = new Date(dateInput);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (isNaN(inputDate.getTime()) || inputDate < today) {
-      return 'Please enter a valid future date in YYYY-MM-DD format:';
+    if (isNaN(date.getTime()) || date < today) {
+      return 'Please enter a future date:';
     }
 
     try {
-      const availableSlots = await this.timeSlotRepository.findAvailableSlots();
-      const slotTimes = availableSlots.map(slot => slot.time);
-
-      if (slotTimes.length === 0) {
-        return `Sorry, no time slots are available for ${dateInput}. Please choose another date:`;
+      const slots = await this.timeSlotRepository.findAvailableSlots();
+      if (!slots.length) {
+        return `No time slots available for ${dateInput}. Please choose another date:`;
       }
 
+      const list = slots.map((s, i) => `${i + 1}. ${s.time}`).join('\n');
       const context = { ...conversation.context, reservation_date: dateInput };
-      await this.conversationRepository.updateState(
-        conversation.session_id,
-        'modify_time',
-        context
-      );
+      await this.conversationRepository.updateState(conversation.session_id, 'modify_time', context);
 
-      const slotsList = slotTimes.map((slot, index) => `${index + 1}. ${slot}`).join('\n');
-
-      return `Available time slots for ${dateInput}:
-
-${slotsList}
-
-Please enter the number of your preferred time slot:`;
-    } catch (error) {
-      return `Error checking availability. Please try again:`;
+      return `Available time slots for ${dateInput}:\n\n${list}\n\nEnter the number of your preferred slot:`;
+    } catch {
+      return 'Error checking availability. Please try again:';
     }
   }
 
   async handleTime(conversation: Conversation, userInput: string): Promise<string> {
-    const choice = parseInt(userInput.trim());
+    const choice = parseInt(userInput.trim(), 10);
 
     try {
-      const availableSlots = await this.timeSlotRepository.findAvailableSlots();
-      const slotTimes = availableSlots.map(slot => slot.time);
+      const slots = await this.timeSlotRepository.findAvailableSlots();
+      const slotTimes = slots.map(s => s.time);
 
       if (isNaN(choice) || choice < 1 || choice > slotTimes.length) {
         return `Please enter a valid number (1-${slotTimes.length}):`;
@@ -156,40 +117,29 @@ Please enter the number of your preferred time slot:`;
 
       const selectedTime = slotTimes[choice - 1];
       const context = { ...conversation.context, reservation_time: selectedTime };
-      await this.conversationRepository.updateState(
-        conversation.session_id,
-        'modify_confirm',
-        context
-      );
+      await this.conversationRepository.updateState(conversation.session_id, 'modify_confirm', context);
 
       return `Updated reservation summary:
-
 Previous: ${context.previous_reservation?.reservation_date} at ${context.previous_reservation?.reservation_time}
 New: ${context.reservation_date} at ${context.reservation_time}
 Party Size: ${context.previous_reservation?.party_size}
 
 Please confirm the changes (yes/no):`;
-    } catch (error) {
+    } catch {
       return 'Error processing your selection. Please try again:';
     }
   }
 
   async handlePartySize(conversation: Conversation, userInput: string): Promise<string> {
-    const partySize = parseInt(userInput.trim());
-
+    const partySize = parseInt(userInput.trim(), 10);
     if (isNaN(partySize) || partySize < 1 || partySize > 20) {
       return 'Please enter a valid number of guests (1-20):';
     }
 
     const context = { ...conversation.context, party_size: partySize };
-    await this.conversationRepository.updateState(
-      conversation.session_id,
-      'modify_confirm',
-      context
-    );
+    await this.conversationRepository.updateState(conversation.session_id, 'modify_confirm', context);
 
     return `Updated reservation summary:
-
 Date: ${context.previous_reservation?.reservation_date}
 Time: ${context.previous_reservation?.reservation_time}
 Previous Party Size: ${context.previous_reservation?.party_size}
@@ -204,9 +154,10 @@ Please confirm the changes (yes/no):`;
     if (response === 'yes' || response === 'y') {
       try {
         const updates: Partial<Reservation> = {};
-
         const newPartySize = conversation.context.party_size;
-        const newDate = conversation.context.reservation_date ? new Date(conversation.context.reservation_date) : undefined;
+        const newDate = conversation.context.reservation_date
+          ? new Date(conversation.context.reservation_date)
+          : undefined;
         const newTime = conversation.context.reservation_time;
 
         const domainUpdated = await this.updateReservationUseCase.execute(
@@ -217,43 +168,30 @@ Please confirm the changes (yes/no):`;
         );
 
         const updated = ReservationAdapter.toType(domainUpdated);
+        await this.conversationRepository.updateState(conversation.session_id, 'completed', conversation.context);
 
-        await this.conversationRepository.updateState(
-          conversation.session_id,
-          'completed',
-          conversation.context
-        );
-
-        return `✅ Reservation updated successfully!
-
-Confirmation ID: ${updated.id}
+        return `Reservation updated successfully.
+ID: ${updated.id}
 Date: ${updated.reservation_date}
 Time: ${updated.reservation_time}
 Party Size: ${updated.party_size}
 
 Type 'restart' to make another reservation.`;
       } catch (error: any) {
-        return `Sorry, ${error.message || 'there was an error updating your reservation'}.
-
-Type 'menu' to return to main menu.`;
+        return `Error updating reservation: ${error.message || 'Please try again.'}
+Type 'menu' to return to the main menu.`;
       }
-    } else if (response === 'no' || response === 'n') {
-      await this.conversationRepository.updateState(
-        conversation.session_id,
-        'menu',
-        {}
-      );
+    }
 
-      return `Changes cancelled. Returning to main menu...
-
-Please choose an option:
+    if (response === 'no' || response === 'n') {
+      await this.conversationRepository.updateState(conversation.session_id, 'menu', {});
+      return `Changes cancelled. Returning to main menu.
 1. Make a new reservation
 2. Modify an existing reservation
 3. Cancel a reservation
-
-Enter the number (1, 2, or 3):`;
-    } else {
-      return 'Please answer "yes" or "no":';
+Enter a number (1, 2, or 3):`;
     }
+
+    return 'Please answer "yes" or "no":';
   }
 }
