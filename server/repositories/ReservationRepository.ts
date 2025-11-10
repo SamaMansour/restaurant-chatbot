@@ -31,7 +31,7 @@ export class ReservationRepository {
       guestName: guestName,
       guestPhone: phoneNumber,
       partySize: partySize,
-      reservationDate: reservationDate.toISOString().split('T')[0],
+      reservationDate: reservationDate,
       reservationTime: reservationTime,
       status: 'confirmed',
     });
