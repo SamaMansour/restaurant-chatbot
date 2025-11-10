@@ -1,13 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { ConversationRepository } from '../../repositories/ConversationRepository';
-import { ReservationRepository } from '../../repositories/ReservationRepository';
 import { Conversation } from '../../types';
+import { ConversationRepository } from '../../repositories/ConversationRepository';
+import { TimeSlotRepository } from '../../repositories/TimeSlotRepository';
+import { CreateReservationUseCase } from '../../usecases/CreateReservationUseCase';
 
 export class NewReservationHandler {
   constructor(
     private conversationRepository: ConversationRepository,
-    private reservationRepository: ReservationRepository
+    private timeSlotRepository: TimeSlotRepository,
+    private createReservationUseCase: CreateReservationUseCase
   ) {}
 
   async handleName(conversation: Conversation, userInput: string): Promise<string> {
@@ -83,7 +83,7 @@ Please enter your preferred date (YYYY-MM-DD format, e.g., 2025-11-15):`;
     }
 
     try {
-      const availableSlots = await this.reservationRepository.getAvailableTimeSlots();
+      const availableSlots = await this.timeSlotRepository.findAvailableSlots();
 
       if (availableSlots.length === 0) {
         return `Sorry, no time slots are available for ${dateInput}. Please choose another date:`;
@@ -114,7 +114,7 @@ Please enter the number of your preferred time slot:`;
     const choice = parseInt(userInput.trim());
 
     try {
-      const availableSlots = await this.reservationRepository.getAvailableTimeSlots();
+      const availableSlots = await this.timeSlotRepository.findAvailableSlots();
       const slotTimes = availableSlots.map(slot => slot.time);
 
       if (isNaN(choice) || choice < 1 || choice > slotTimes.length) {
@@ -148,7 +148,7 @@ Please confirm (yes/no):`;
 
     if (response === 'yes' || response === 'y') {
       try {
-        const reservation = await this.reservationRepository.create(
+        const reservation = await this.createReservationUseCase.execute(
           conversation.context.guest_name!,
           conversation.context.guest_phone!,
           conversation.context.party_size!,

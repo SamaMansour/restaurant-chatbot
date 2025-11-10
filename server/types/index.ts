@@ -1,5 +1,5 @@
 export interface Reservation {
-  id: number | string;
+  id: number| string;
   guest_name: string;
   guest_phone: string;
   party_size: number;
@@ -11,7 +11,7 @@ export interface Reservation {
 }
 
 export interface Conversation {
-  id: number | string;
+  id: number| string;
   session_id: string;
   state: ConversationState;
   context: ConversationContext;

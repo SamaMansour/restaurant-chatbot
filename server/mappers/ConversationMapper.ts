@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Conversation, ConversationState } from '../domain/Conversation';
 import ConversationModel from '../database/models/Conversation';
 

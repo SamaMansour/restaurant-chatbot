@@ -1,5 +1,5 @@
-import { ConversationRepository } from '../../repositories/ConversationRepository';
 import { Conversation } from '../../types';
+import { ConversationRepository } from '../../repositories/ConversationRepository';
 
 export class MenuHandler {
   constructor(private conversationRepository: ConversationRepository) {}

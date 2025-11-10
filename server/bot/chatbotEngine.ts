@@ -1,5 +1,6 @@
 import { ConversationRepository } from '../repositories/ConversationRepository';
 import { ReservationRepository } from '../repositories/ReservationRepository';
+import { TimeSlotRepository } from '../repositories/TimeSlotRepository';
 import { ConversationAdapter } from '../interfaces/conversationAdapter';
 import { Conversation } from '../types';
 import { GreetingHandler } from './handlers/greetingHandler';
@@ -7,10 +8,12 @@ import { MenuHandler } from './handlers/menuHandler';
 import { NewReservationHandler } from './handlers/newReservationHandler';
 import { ModifyReservationHandler } from './handlers/modifyReservationHandler';
 import { CancelReservationHandler } from './handlers/cancelReservationHandler';
+import { CreateReservationUseCase } from '../usecases/CreateReservationUseCase';
+import { UpdateReservationUseCase } from '../usecases/UpdateReservationUseCase';
+import { CancelReservationUseCase } from '../usecases/CancelReservationUseCase';
 
 export class ChatbotEngine {
   private conversationRepository: ConversationRepository;
-  private reservationRepository: ReservationRepository;
   private greetingHandler: GreetingHandler;
   private menuHandler: MenuHandler;
   private newReservationHandler: NewReservationHandler;
@@ -19,20 +22,30 @@ export class ChatbotEngine {
 
   constructor() {
     this.conversationRepository = new ConversationRepository();
-    this.reservationRepository = new ReservationRepository();
+    const reservationRepository = new ReservationRepository();
+    const timeSlotRepository = new TimeSlotRepository();
+
+    const createReservationUseCase = new CreateReservationUseCase(reservationRepository, timeSlotRepository);
+    const updateReservationUseCase = new UpdateReservationUseCase(reservationRepository, timeSlotRepository);
+    const cancelReservationUseCase = new CancelReservationUseCase(reservationRepository, timeSlotRepository);
+
     this.greetingHandler = new GreetingHandler(this.conversationRepository);
     this.menuHandler = new MenuHandler(this.conversationRepository);
     this.newReservationHandler = new NewReservationHandler(
       this.conversationRepository,
-      this.reservationRepository
+      timeSlotRepository,
+      createReservationUseCase
     );
     this.modifyReservationHandler = new ModifyReservationHandler(
       this.conversationRepository,
-      this.reservationRepository
+      reservationRepository,
+      timeSlotRepository,
+      updateReservationUseCase
     );
     this.cancelReservationHandler = new CancelReservationHandler(
       this.conversationRepository,
-      this.reservationRepository
+      reservationRepository,
+      cancelReservationUseCase
     );
   }
 

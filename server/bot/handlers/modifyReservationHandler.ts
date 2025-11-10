@@ -1,12 +1,16 @@
-import { ConversationRepository } from '../../repositories/ConversationRepository';
-import { ReservationRepository } from '../../repositories/ReservationRepository';
 import { ReservationAdapter } from '../../interfaces/reservationAdapter';
 import { Conversation, Reservation } from '../../types';
+import { ConversationRepository } from '../../repositories/ConversationRepository';
+import { ReservationRepository } from '../../repositories/ReservationRepository';
+import { TimeSlotRepository } from '../../repositories/TimeSlotRepository';
+import { UpdateReservationUseCase } from '../../usecases/UpdateReservationUseCase';
 
 export class ModifyReservationHandler {
   constructor(
     private conversationRepository: ConversationRepository,
-    private reservationRepository: ReservationRepository
+    private reservationRepository: ReservationRepository,
+    private timeSlotRepository: TimeSlotRepository,
+    private updateReservationUseCase: UpdateReservationUseCase
   ) {}
 
   async handleLookup(conversation: Conversation, userInput: string): Promise<string> {
@@ -113,7 +117,7 @@ Please enter the number of the reservation you'd like to modify:`;
     }
 
     try {
-      const availableSlots = await this.reservationRepository.getAvailableTimeSlots();
+      const availableSlots = await this.timeSlotRepository.findAvailableSlots();
       const slotTimes = availableSlots.map(slot => slot.time);
 
       if (slotTimes.length === 0) {
@@ -143,7 +147,7 @@ Please enter the number of your preferred time slot:`;
     const choice = parseInt(userInput.trim());
 
     try {
-      const availableSlots = await this.reservationRepository.getAvailableTimeSlots();
+      const availableSlots = await this.timeSlotRepository.findAvailableSlots();
       const slotTimes = availableSlots.map(slot => slot.time);
 
       if (isNaN(choice) || choice < 1 || choice > slotTimes.length) {
@@ -205,7 +209,7 @@ Please confirm the changes (yes/no):`;
         const newDate = conversation.context.reservation_date ? new Date(conversation.context.reservation_date) : undefined;
         const newTime = conversation.context.reservation_time;
 
-        const domainUpdated = await this.reservationRepository.updateReservation(
+        const domainUpdated = await this.updateReservationUseCase.execute(
           conversation.context.previous_reservation?.id!,
           newPartySize,
           newDate,

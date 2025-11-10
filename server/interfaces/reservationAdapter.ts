@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Reservation as DomainReservation } from '../domain/Reservation';
 import { Reservation as TypeReservation } from '../types';
 
 export class ReservationAdapter {
   static toType(domain: DomainReservation): TypeReservation {
     return {
-      id: domain.id.toString(),
+      id: domain.id,
       guest_name: domain.guestName,
       guest_phone: domain.phoneNumber,
       party_size: domain.partySize,

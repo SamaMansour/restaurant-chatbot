@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 

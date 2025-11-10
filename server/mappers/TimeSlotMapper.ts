@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { TimeSlot } from '../domain/TimeSlot';
 import TimeSlotModel from '../database/models/TimeSlot';
 

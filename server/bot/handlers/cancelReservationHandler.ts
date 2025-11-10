@@ -1,12 +1,14 @@
-import { ConversationRepository } from '../../repositories/ConversationRepository';
-import { ReservationRepository } from '../../repositories/ReservationRepository';
 import { ReservationAdapter } from '../../interfaces/reservationAdapter';
 import { Conversation } from '../../types';
+import { ConversationRepository } from '../../repositories/ConversationRepository';
+import { ReservationRepository } from '../../repositories/ReservationRepository';
+import { CancelReservationUseCase } from '../../usecases/CancelReservationUseCase';
 
 export class CancelReservationHandler {
   constructor(
     private conversationRepository: ConversationRepository,
-    private reservationRepository: ReservationRepository
+    private reservationRepository: ReservationRepository,
+    private cancelReservationUseCase: CancelReservationUseCase
   ) {}
 
   async handleLookup(conversation: Conversation, userInput: string): Promise<string> {
@@ -73,7 +75,7 @@ Please enter the number of the reservation you'd like to cancel:`;
 
     if (response === 'yes' || response === 'y') {
       try {
-        await this.reservationRepository.cancelReservation(
+        await this.cancelReservationUseCase.execute(
           conversation.context.previous_reservation?.id!
         );
 

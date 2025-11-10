@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Reservation } from '../domain/Reservation';
 import ReservationModel from '../database/models/Reservation';
 

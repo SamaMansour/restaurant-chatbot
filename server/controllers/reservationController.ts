@@ -1,16 +1,24 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import express from 'express';
 import { ReservationRepository } from '../repositories/ReservationRepository';
+import { TimeSlotRepository } from '../repositories/TimeSlotRepository';
 import { ReservationAdapter } from '../interfaces/reservationAdapter';
+import { CreateReservationUseCase } from '../usecases/CreateReservationUseCase';
+import { UpdateReservationUseCase } from '../usecases/UpdateReservationUseCase';
+import { CancelReservationUseCase } from '../usecases/CancelReservationUseCase';
 
 const router = express.Router();
 const reservationRepository = new ReservationRepository();
+const timeSlotRepository = new TimeSlotRepository();
+
+const createReservationUseCase = new CreateReservationUseCase(reservationRepository, timeSlotRepository);
+const updateReservationUseCase = new UpdateReservationUseCase(reservationRepository, timeSlotRepository);
+const cancelReservationUseCase = new CancelReservationUseCase(reservationRepository, timeSlotRepository);
 
 router.post('/', async (req, res) => {
   try {
     const { guestName, phoneNumber, partySize, reservationDate, reservationTime } = req.body;
 
-    const reservation = await reservationRepository.create(
+    const reservation = await createReservationUseCase.execute(
       guestName,
       phoneNumber,
       partySize,
@@ -70,7 +78,7 @@ router.put('/:id', async (req, res) => {
   try {
     const { partySize, reservationDate, reservationTime } = req.body;
 
-    const reservation = await reservationRepository.updateReservation(
+    const reservation = await updateReservationUseCase.execute(
       req.params.id,
       partySize,
       reservationDate ? new Date(reservationDate) : undefined,
@@ -91,7 +99,7 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const reservation = await reservationRepository.cancelReservation(req.params.id);
+    const reservation = await cancelReservationUseCase.execute(req.params.id);
     res.json({
       success: true,
       data: ReservationAdapter.toDTO(reservation),
@@ -106,11 +114,13 @@ router.delete('/:id', async (req, res) => {
 
 router.get('/slots/:date', async (req, res) => {
   try {
-    const slots = await reservationRepository.getAvailableTimeSlots();
+    const slots = await timeSlotRepository.findAvailableSlots();
     res.json({
       success: true,
       data: slots.map(s => ({
         time: s.time,
+        capacity: s.capacity,
+        availableSlots: s.availableSlots,
         available: s.isAvailable()
       })),
     });

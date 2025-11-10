@@ -1,5 +1,5 @@
-import { ConversationRepository } from '../../repositories/ConversationRepository';
 import { Conversation } from '../../types';
+import { ConversationRepository } from '../../repositories/ConversationRepository';
 
 export class GreetingHandler {
   constructor(private conversationRepository: ConversationRepository) {}
