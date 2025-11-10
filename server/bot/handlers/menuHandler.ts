@@ -1,14 +1,14 @@
-import { ConversationService } from '../../services/conversationService';
 import { Conversation } from '../../types';
+import { ConversationRepository } from '../../repositories/ConversationRepository';
 
 export class MenuHandler {
-  constructor(private conversationService: ConversationService) {}
+  constructor(private conversationRepository: ConversationRepository) {}
 
   async handle(conversation: Conversation, userInput: string): Promise<string> {
     const choice = userInput.trim();
 
     if (choice === '1') {
-      await this.conversationService.updateConversation(
+      await this.conversationRepository.updateState(
         conversation.session_id,
         'new_reservation_name',
         { intent: 'new' }
@@ -17,7 +17,7 @@ export class MenuHandler {
 
 Please enter your name:`;
     } else if (choice === '2') {
-      await this.conversationService.updateConversation(
+      await this.conversationRepository.updateState(
         conversation.session_id,
         'modify_lookup',
         { intent: 'modify' }
@@ -26,7 +26,7 @@ Please enter your name:`;
 
 Please enter the phone number associated with your reservation:`;
     } else if (choice === '3') {
-      await this.conversationService.updateConversation(
+      await this.conversationRepository.updateState(
         conversation.session_id,
         'cancel_lookup',
         { intent: 'cancel' }

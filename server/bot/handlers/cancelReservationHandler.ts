@@ -1,87 +1,85 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { ConversationService } from "../../services/conversationService";
-import { ReservationService } from "../../services/reservationService";
-import { Conversation } from "../../types";
+import { ReservationAdapter } from '../../interfaces/reservationAdapter';
+import { Conversation } from '../../types';
+import { ConversationRepository } from '../../repositories/ConversationRepository';
+import { ReservationRepository } from '../../repositories/ReservationRepository';
+import { CancelReservationUseCase } from '../../usecases/CancelReservationUseCase';
 
 export class CancelReservationHandler {
   constructor(
-    private conversationService: ConversationService,
-    private reservationService: ReservationService
+    private conversationRepository: ConversationRepository,
+    private reservationRepository: ReservationRepository,
+    private cancelReservationUseCase: CancelReservationUseCase
   ) {}
 
-  async handleLookup(convo: Conversation, input: string): Promise<string> {
-    const phone = input.trim();
-    if (!phone) return "Please enter a valid phone number.";
+  async handleLookup(conversation: Conversation, userInput: string): Promise<string> {
+    const phone = userInput.trim();
 
     try {
-      const reservations = await this.reservationService.getReservationByPhone(phone);
-      if (!reservations.length) {
-        return `No confirmed reservations found for ${phone}.
-Please check your number and try again, or type 'menu' to return to the main menu.`;
+      const domainReservations = await this.reservationRepository.findByPhone(phone);
+      const reservations = ReservationAdapter.toTypeBatch(domainReservations);
+
+      if (reservations.length === 0) {
+        return `No reservations found for ${phone}.
+Please check your number and try again, or type 'menu' to return to the main menu:`;
       }
 
-      const context = { ...convo.context, guest_phone: phone };
+      const context = { ...conversation.context, guest_phone: phone };
 
       if (reservations.length === 1) {
-        const r = reservations[0];
-        await this.conversationService.updateConversation(convo.session_id, "cancel_confirm", {
-          ...context,
-          reservation_id: r.id,
-          previous_reservation: r,
-        });
+        const res = reservations[0];
+        context.reservation_id = res.id;
+        context.previous_reservation = res;
+
+        await this.conversationRepository.updateState(conversation.session_id, 'cancel_confirm', context);
 
         return `Found your reservation:
-Date: ${r.reservation_date}
-Time: ${r.reservation_time}
-Party Size: ${r.party_size}
+Date: ${res.reservation_date}
+Time: ${res.reservation_time}
+Party Size: ${res.party_size}
 
-Are you sure you want to cancel this reservation? (yes/no)`;
+Are you sure you want to cancel this reservation? (yes/no):`;
       }
 
       const list = reservations
         .map((r, i) => `${i + 1}. ${r.reservation_date} at ${r.reservation_time} (Party of ${r.party_size})`)
-        .join("\n");
+        .join('\n');
 
-      await this.conversationService.updateConversation(convo.session_id, "cancel_confirm", context);
+      context.previous_reservation = reservations[0];
+      await this.conversationRepository.updateState(conversation.session_id, 'cancel_confirm', context);
 
-      return `Found multiple reservations:\n\n${list}\n\nEnter the number of the reservation you'd like to cancel:`;
+      return `Found multiple reservations:\n\n${list}\n\nEnter the number of the reservation you want to cancel:`;
     } catch {
-      return "Error looking up reservations. Please try again.";
+      return 'Error looking up your reservation. Please try again:';
     }
   }
 
-  async handleConfirm(convo: Conversation, input: string): Promise<string> {
-    const answer = input.trim().toLowerCase();
+  async handleConfirm(conversation: Conversation, userInput: string): Promise<string> {
+    const response = userInput.trim().toLowerCase();
 
-    if (["yes", "y"].includes(answer)) {
+    if (response === 'yes' || response === 'y') {
       try {
-        const id = convo.context.previous_reservation?.id;
-        if (!id) return "No reservation selected. Please start again.";
-
-        await this.reservationService.cancelReservation(id);
-        await this.conversationService.updateConversation(convo.session_id, "completed", convo.context);
+        await this.cancelReservationUseCase.execute(conversation.context.previous_reservation?.id!);
+        await this.conversationRepository.updateState(conversation.session_id, 'completed', conversation.context);
 
         return `Reservation cancelled successfully.
-We hope to serve you another time!
+We hope to serve you again in the future.
 
 Type 'restart' to make a new reservation.`;
-      } catch (err: any) {
-        return `Sorry, ${err.message || "an error occurred while cancelling your reservation"}.
+      } catch (error: any) {
+        return `Error cancelling reservation: ${error.message || 'Please try again.'}
 Type 'menu' to return to the main menu.`;
       }
     }
 
-    if (["no", "n"].includes(answer)) {
-      await this.conversationService.updateConversation(convo.session_id, "menu", {});
-      return `Cancellation aborted. Returning to main menu:
-
+    if (response === 'no' || response === 'n') {
+      await this.conversationRepository.updateState(conversation.session_id, 'menu', {});
+      return `Cancellation aborted. Returning to main menu.
 1. Make a new reservation
 2. Modify an existing reservation
 3. Cancel a reservation
-
-Enter your choice (1, 2, or 3):`;
+Enter a number (1, 2, or 3):`;
     }
 
-    return 'Please respond with "yes" or "no".';
+    return 'Please answer "yes" or "no":';
   }
 }

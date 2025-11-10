@@ -1,11 +1,11 @@
-import { ConversationService } from '../../services/conversationService';
 import { Conversation } from '../../types';
+import { ConversationRepository } from '../../repositories/ConversationRepository';
 
 export class GreetingHandler {
-  constructor(private conversationService: ConversationService) {}
+  constructor(private conversationRepository: ConversationRepository) {}
 
   async handle(conversation: Conversation): Promise<string> {
-    await this.conversationService.updateConversation(
+    await this.conversationRepository.updateState(
       conversation.session_id,
       'menu',
       conversation.context

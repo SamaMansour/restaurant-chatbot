@@ -1,18 +1,17 @@
 export interface Reservation {
-  id?: string;
+  id: number| string;
   guest_name: string;
   guest_phone: string;
   party_size: number;
   reservation_date: string;
   reservation_time: string;
-  status: 'confirmed' | 'cancelled' | 'modified';
+  status: 'confirmed' | 'cancelled' | 'pending';
   created_at?: string;
   updated_at?: string;
-  conversation_id?: string;
 }
 
 export interface Conversation {
-  id?: string;
+  id: number| string;
   session_id: string;
   state: ConversationState;
   context: ConversationContext;
@@ -46,12 +45,12 @@ export interface ConversationContext {
   party_size?: number;
   reservation_date?: string;
   reservation_time?: string;
-  reservation_id?: string;
+  reservation_id?: number| string;
   previous_reservation?: Reservation;
 }
 
 export interface TimeSlot {
-  id?: string;
+  id: number| string;
   slot_time: string;
   max_capacity: number;
   is_active: boolean;
