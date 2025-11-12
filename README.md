@@ -16,7 +16,6 @@ Built with **TypeScript**, **Node.js**, **Express**, and **PostgreSQL** followin
 
 * Node.js, TypeScript, Express
 * PostgreSQL, Sequelize ORM
-* Optional React + Vite frontend
 * Patterns: State Machine, Strategy, Service Layer
 
 ## Quick Start
