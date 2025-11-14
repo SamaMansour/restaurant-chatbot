@@ -22,7 +22,7 @@ Built with **TypeScript**, **Node.js**, **Express**, and **PostgreSQL** followin
 
 ```bash
 npm ci
-cp .env.example .env
+cp env.example .env
 npm run db:create
 npm run db:migrate
 npm run db:seed
